@@ -12,7 +12,7 @@ MENU = {
     },
     "green_bowl": {
         "name": "Green Bowl",
-        "city": "Bangalore",
+        "city": "Kurnool",
         "cuisine": "Healthy / Salads",
         "items": [
             {"id": "g1", "name": "Quinoa Salad Bowl", "price": 220},
@@ -23,7 +23,7 @@ MENU = {
     },
     "cafe_noor": {
         "name": "Café Noor",
-        "city": "Bangalore",
+        "city": "Hydrebad",
         "cuisine": "Bakery / Café",
         "items": [
             {"id": "c1", "name": "Chicken Puff", "price": 60},
