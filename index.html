@@ -204,6 +204,29 @@
             overflow: hidden;
         }
 
+        .phone-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .phone-stage {
+            height: 100%;
+        }
+
+        .phone-inner {
+            padding: 16px;
+        }
+
+        .phone-inner h3 {
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+        }
+
+        .phone-inner p {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
         .chat-head {
             background: var(--green);
             color: #fff;
@@ -306,6 +329,76 @@
             font-size: 0.7rem;
             color: var(--muted);
             margin-top: 10px;
+        }
+
+        /* LOCATION + RESTAURANT PICKER (inside phone) */
+        .picker-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .picker-row input {
+            flex: 1;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 9px 10px;
+            font-size: 0.8rem;
+            font-family: inherit;
+        }
+
+        .picker-row button {
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 14px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .location-note {
+            font-size: 0.72rem;
+            color: var(--muted);
+            margin-top: 10px;
+        }
+
+        .restaurant-card {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+
+        .restaurant-card:hover {
+            border-color: var(--green);
+        }
+
+        .restaurant-card b {
+            display: block;
+            font-size: 0.85rem;
+        }
+
+        .restaurant-card span {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 12px;
+            font-size: 0.74rem;
+            color: var(--muted);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
         }
 
         /* STATS */
@@ -562,13 +655,44 @@
             <div class="phone-frame">
                 <div class="phone-screen">
                     <div class="chat-head">
-                        <div class="chat-avatar">SP</div>
-                        <div><b>Spice House</b><span>MenuLink AI Agent · online</span></div>
+                        <div class="chat-avatar" id="chatAvatar">M</div>
+                        <div><b id="chatRestaurantName">MenuLink</b><span id="chatSubtext">Find a restaurant to
+                                start</span></div>
                     </div>
-                    <div class="chat-body" id="chatBody">
-                        <div class="bubble bot">Hi! 👋 Welcome to Spice House. What would you like to order today?</div>
+
+                    <div class="phone-content" id="phoneContent">
+                        <!-- STAGE 1: location input -->
+                        <div id="stageLocation" class="phone-stage">
+                            <div class="phone-inner">
+                                <h3>Find restaurants near you</h3>
+                                <p>Enter your city to see who's taking orders on MenuLink.</p>
+                                <div class="picker-row">
+                                    <input id="locationInput" type="text" placeholder="e.g. Bangalore"
+                                        onkeydown="if(event.key==='Enter') findRestaurants();">
+                                    <button onclick="findRestaurants()">Find</button>
+                                </div>
+                                <div class="location-note" id="locationNote"></div>
+                            </div>
+                        </div>
+
+                        <!-- STAGE 2: restaurant list -->
+                        <div id="stageRestaurants" class="phone-stage hidden">
+                            <div class="phone-inner">
+                                <p id="restaurantSubtext" style="margin-bottom:10px;">Pick one to see their menu and
+                                    order.</p>
+                                <div id="restaurantList"></div>
+                                <div class="back-link" onclick="backToLocation()">← change location</div>
+                            </div>
+                        </div>
+
+                        <!-- STAGE 3: chat -->
+                        <div id="stageChat" class="phone-stage hidden"
+                            style="height:100%;display:flex;flex-direction:column;">
+                            <div class="chat-body" id="chatBody" style="flex:1;"></div>
+                        </div>
                     </div>
-                    <div class="chat-input-row">
+
+                    <div class="chat-input-row hidden" id="chatInputRow">
                         <input id="chatInput" type="text" placeholder="Type a message…"
                             onkeydown="if(event.key==='Enter') sendMsg();">
                         <button onclick="sendMsg()">➤</button>
@@ -691,8 +815,76 @@
     <footer>MenuLink · Concept demo · AI agent connected live for demonstration purposes</footer>
 
     <script>
-        // Point this at your local server for now, and your Render URL after deploying.
-        const API_URL = "http://127.0.0.1:8000/chat";
+        const API_BASE = "https://demo-menulnk.onrender.com";
+
+        function showStage(stage) {
+            document.getElementById("stageLocation").classList.add("hidden");
+            document.getElementById("stageRestaurants").classList.add("hidden");
+            document.getElementById("stageChat").classList.add("hidden");
+            document.getElementById(stage).classList.remove("hidden");
+
+            const inputRow = document.getElementById("chatInputRow");
+            if (stage === "stageChat") { inputRow.classList.remove("hidden"); }
+            else { inputRow.classList.add("hidden"); }
+        }
+
+        async function findRestaurants() {
+            const city = document.getElementById("locationInput").value.trim();
+            const note = document.getElementById("locationNote");
+            note.textContent = "Searching…";
+
+            try {
+                const res = await fetch(`${API_BASE}/restaurants?city=${encodeURIComponent(city)}`);
+                const data = await res.json();
+                note.textContent = "";
+
+                const list = document.getElementById("restaurantList");
+                list.innerHTML = "";
+                data.restaurants.forEach(r => {
+                    const card = document.createElement("div");
+                    card.className = "restaurant-card";
+                    card.innerHTML = `<b>${r.name}</b><span>${r.cuisine} · ${r.city}</span>`;
+                    card.onclick = () => selectRestaurant(r.id, r.name);
+                    list.appendChild(card);
+                });
+
+                document.getElementById("restaurantSubtext").textContent = data.matched_location
+                    ? `Showing restaurants in "${city}".`
+                    : `No restaurants in "${city}" yet — showing nearby options instead.`;
+
+                document.getElementById("chatSubtext").textContent = "Choose a restaurant";
+                showStage("stageRestaurants");
+            } catch (err) {
+                note.textContent = "⚠ Couldn't reach the server. Try again in a moment.";
+            }
+        }
+
+        function backToLocation() {
+            document.getElementById("chatSubtext").textContent = "Find a restaurant to start";
+            showStage("stageLocation");
+        }
+
+        async function selectRestaurant(id, name) {
+            try {
+                await fetch(`${API_BASE}/select-restaurant`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ restaurant_id: id })
+                });
+            } catch (err) {
+                alert("Couldn't connect to the restaurant. Try again.");
+                return;
+            }
+
+            document.getElementById("chatRestaurantName").textContent = name;
+            document.getElementById("chatSubtext").textContent = "MenuLink AI Agent · online";
+            document.getElementById("chatAvatar").textContent = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+
+            const body = document.getElementById("chatBody");
+            body.innerHTML = `<div class="bubble bot">Hi! 👋 Welcome to ${name}. What would you like to order today?</div>`;
+
+            showStage("stageChat");
+        }
 
         async function sendMsg() {
             const input = document.getElementById("chatInput");
@@ -714,7 +906,7 @@
             body.scrollTop = body.scrollHeight;
 
             try {
-                const res = await fetch(API_URL, {
+                const res = await fetch(`${API_BASE}/chat`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message: text })
@@ -729,7 +921,7 @@
                 typing.remove();
                 const errBubble = document.createElement("div");
                 errBubble.className = "bubble bot";
-                errBubble.textContent = "⚠ Couldn't reach the agent. Is your local server running?";
+                errBubble.textContent = "⚠ Couldn't reach the agent. Is the server awake?";
                 body.appendChild(errBubble);
             }
             body.scrollTop = body.scrollHeight;

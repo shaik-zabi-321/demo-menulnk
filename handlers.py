@@ -3,6 +3,15 @@ from menu import MENU
 # Simple in-memory session state (fine for a demo, not for production)
 session = {"cart": [], "restaurant": "spice_house", "last_order": {}}
 
+def set_restaurant(restaurant_id):
+    """Switch the active restaurant and reset the cart, so old items don't carry over."""
+    if restaurant_id not in MENU:
+        return {"error": "unknown restaurant"}
+    session["restaurant"] = restaurant_id
+    session["cart"] = []
+    session["last_order"] = {}
+    return {"restaurant": MENU[restaurant_id]["name"]}
+
 def search_menu(query):
     items = MENU[session["restaurant"]]["items"]
     matches = [i for i in items if query.lower() in i["name"].lower()]
@@ -23,16 +32,15 @@ def calculate_total():
 def create_order():
     total = sum(i["price"] * i["quantity"] for i in session["cart"])
     order = {"order_id": "ORD1042", "items": session["cart"].copy(), "total": total}
-    session["last_order"] = order   # remember this order before clearing the cart
-    session["cart"] = []            # reset the cart now that the order is placed
+    session["last_order"] = order
+    session["cart"] = []
     return order
 
 def generate_payment_link(amount):
-    # Fake link for demo purposes — real UPI integration is a separate project
-    return {"payment_link": f"upi://pay/SpiceHouse@upi?amount={amount}"}
+    restaurant_name = MENU[session["restaurant"]]["name"].replace(" ", "")
+    return {"payment_link": f"upi://pay/{restaurant_name}@upi?amount={amount}"}
 
 def notify_restaurant():
-    # In a real system this would hit the restaurant's dashboard/notification
     order = session.get("last_order", {})
     print(f"[NOTIFY] New order for {session['restaurant']}: {order}")
     return {"status": "restaurant notified"}
