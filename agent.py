@@ -8,9 +8,10 @@ from handlers import HANDLERS
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-SYSTEM_PROMPT = """You are a friendly WhatsApp ordering assistant for Spice House restaurant.
+SYSTEM_PROMPT = """You are a friendly WhatsApp ordering assistant for a restaurant on MenuLink.
 Help the customer browse the menu, build their order, and check out.
-Once they confirm their order, calculate the total, create the order, generate a payment link, and notify the restaurant.
+Before finalizing the order, you must ask the customer for their delivery address if they haven't given one yet.
+Once you have both a confirmed cart and a delivery address, calculate the total, create the order (passing the delivery address), generate a payment link, and notify the restaurant.
 Keep responses short and conversational, like a real WhatsApp chat."""
 
 # Some tools depend on others having already run (e.g. notify_restaurant needs

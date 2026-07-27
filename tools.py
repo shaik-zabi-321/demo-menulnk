@@ -38,8 +38,14 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "create_order",
-            "description": "Finalize the cart into an order once the customer confirms",
-            "parameters": {"type": "object", "properties": {}}
+            "description": "Finalize the cart into an order once the customer confirms and has given a delivery address",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "delivery_address": {"type": "string", "description": "The customer's delivery address or location"}
+                },
+                "required": ["delivery_address"]
+            }
         }
     },
     {
